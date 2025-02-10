@@ -103,37 +103,49 @@ def normalize_input(dish_name,synonym_map):     #normalising the input values to
     normalized_words=[synonym_map.get(word,word) for word in words]
     return " ".join(normalized_words)
 
+
 def extract_ingredients(dish_name,dataset,threshold=80):
     
     #if the exact name of the dish is present in the dataset
     if dish_name in dataset["title"].values:
-        return dataset.loc[dataset["title"]==dish_name,"NER"].tolist()
+        return dataset.loc[dataset["title"]==dish_name,"NER"].explode().tolist(),dish_name
     
     #using fuzzy logic 
-    matches=process.extract(dish_name,dataset["title"].values,limit=1) #find the best match of the dish 
-    best_match,score=matches[0] #extracts the dish name and the score 
+    matches=process.extract(dish_name,dataset["title"].values,limit=5) #find the best match 5 matches of the dish 
+    best_matches=[match for match,score in matches if score>=threshold and len(matches)>2] #extracts the dish name and the score 
     
-    if score>=threshold:
-        return dataset.loc[dataset["title"]==best_match,"NER"].tolist() #if score is gteater than the threshold value then return the list of the ingredients for the dish 
+    all_ingredients=[]
+    matched_titles=[]
+    for best_match in best_matches:
+        ingredients = dataset.loc[dataset["title"] == best_match, "NER"].str.split(", ").iloc[0]
+        ingredients_str = ", ".join(ingredients).strip()  # Join the ingredients into a string
+        
+        ingredient_entry=f"{best_match}- Ingredients:{ingredients_str}"
+        all_ingredients.append(ingredient_entry)
+        matched_titles.append(best_match)
+            
     
-    return [] #if no match is found return an empty list 
-
+    return all_ingredients,matched_titles
+                   
+        
 def main():
     file_path1="C:\\greenbite\\datasets\\filtered_recipes_1m.csv"
-    file_path2="C:\\greenbite\\datasets\\Food_Product_Emissions.csv"
-    recipie_dataset=load_dataset(file_path1)
-    emissions_dataset=load_dataset(file_path2)
+    recipe_dataset=load_dataset(file_path1)
     
-    user_input=input("Enter the name of your dish")
+    user_input=input("Enter the name of your dish: ")
     
     normalized_input=normalize_input(user_input,synonym_map)
     
-    ingredients=extract_ingredients(normalized_input,dataset)
-    
-    if ingredients:
-        print(f"Ingredients for '{user_input}':{','.join(ingredients)}")
+    recipes,matched_titles=extract_ingredients(normalized_input,recipe_dataset)
+        
+    if matched_titles:
+        if len(matched_titles)==1:
+            print(f"Recipe 1: {matched_titles[0]} - Ingredients: {recipes[0]}")
+
+        for index, recipe in enumerate(recipes, start=1):
+            print(f"Recipe {index}: {matched_titles[index-1]} - Ingredients: {recipe}")
     else:
-        print(f"Sorry! no ingredients found for '{user_input}.")
+        print(f"Sorry! no recipies found for {user_input}")
         
 if __name__=="__main__":
     main()
