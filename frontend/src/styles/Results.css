@@ -1,0 +1,27 @@
+.recipe-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.recipe-card {
+    border: 2px solid #ddd;
+    padding: 12px;
+    border-radius: 10px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+    background-color: #fff5f8;
+}
+
+button {
+    margin-top: 8px;
+    padding: 6px 12px;
+    background-color: #ff69b4;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #ff4081;
+}

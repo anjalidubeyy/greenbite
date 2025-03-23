@@ -1,0 +1,40 @@
+# General Python ignores
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Build and distribution
+build/
+dist/
+*.egg-info/
+.installed.cfg
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+.coverage
+.coverage.*
+.tox/
+.nox/
+.pytest_cache/
+.hypothesis/
+
+# Logs and local database
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Node.js (Frontend) ignores
+node_modules/
+frontend/build/
+
+# Environment variables
+.env

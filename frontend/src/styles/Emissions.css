@@ -1,0 +1,162 @@
+/* Main Container */
+.emissions-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 25px;
+    background: #fff0f6; /* Soft pastel pink */
+    border-radius: 15px;
+    box-shadow: 0px 5px 12px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    font-family: 'Fredoka One', sans-serif;
+    transition: all 0.3s ease-in-out;
+}
+
+/* Headings */
+h1 {
+    font-size: 26px;
+    color: #2d6a4f; /* Deep green */
+    margin-bottom: 12px;
+    font-weight: 700;
+}
+
+h3 {
+    font-size: 20px;
+    color: #40916c;
+    margin-top: 12px;
+    font-weight: 600;
+}
+
+p {
+    font-size: 16px; /* Reduced from 18px */
+    color: #495057;
+    margin-bottom: 8px;
+}
+
+/* Flexbox Layout for Side-by-Side Display */
+.emissions-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+/* Emissions Data Styling */
+.emissions-data {
+    flex: 1;
+    padding: 18px;
+    background: #ffdde1; /* Pastel Pink */
+    border-radius: 12px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease-in-out;
+    font-size: 14px; /* Decreased font size */
+}
+
+.emissions-data:hover {
+    transform: scale(1.02);
+}
+
+/* Emissions List */
+ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 8px;
+}
+
+ul li {
+    background: #d8f3dc; /* Soft pastel green */
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 10px;
+    font-size: 14px; /* Reduced from 18px */
+    color: #1b4332;
+    font-weight: 500;
+    transition: transform 0.2s ease-in-out, background 0.3s ease-in-out;
+}
+
+ul li:hover {
+    transform: scale(1.05);
+    background: #95d5b2;
+}
+
+/* Emissions Chart */
+.emissions-chart {
+    flex: 1;
+    padding: 18px;
+    background: #e6ffe6; /* Soft pastel green */
+    border-radius: 12px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Chart Container */
+.chart-container {
+    padding: 15px;
+    background: #f1faee;
+    border-radius: 12px;
+    box-shadow: 0px 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Error & Loading Messages */
+.error {
+    color: #d9534f;
+    font-weight: bold;
+    font-size: 16px;
+    background: #f8d7da;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.loading {
+    font-size: 16px;
+    color: #0077b6;
+    font-style: italic;
+}
+
+/* Button Styling */
+button {
+    margin-top: 15px;
+    padding: 10px 15px;
+    font-size: 15px;
+    font-weight: bold;
+    color: white;
+    background: #52b788;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s ease-in-out;
+}
+
+button:hover {
+    background: #40916c;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .emissions-container {
+        max-width: 90%;
+        padding: 15px;
+    }
+
+    .emissions-content {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .emissions-data,
+    .emissions-chart {
+        width: 100%;
+    }
+
+    h1 {
+        font-size: 22px;
+    }
+
+    h3 {
+        font-size: 18px;
+    }
+
+    p,
+    ul li {
+        font-size: 14px; /* Ensuring smaller font on smaller screens */
+    }
+}

@@ -1,0 +1,110 @@
+/* Main Container */
+.home-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #FCC2FC, #B5F1CC);
+  text-align: center;
+  padding: 60px;
+  overflow: hidden;
+}
+
+/* Sticker Grid */
+.sticker-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr); /* 6 stickers per row */
+  grid-template-rows: repeat(3, 1fr); /* Exactly 3 rows */
+  gap: 120px 100px; /* Increased spacing */
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Stickers */
+.sticker {
+  width: 160px; /* Increased size for better coverage */
+  height: auto;
+  opacity: 0.5;
+  justify-self: center;
+  align-self: center;
+}
+
+/* Title & Text */
+.home-container h1 {
+  font-size: 120px;
+  font-weight: bold;
+  color: #D83B9A;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+  letter-spacing: 5px;
+  animation: fadeIn 2s ease-out;
+  position: relative;
+  z-index: 2;
+}
+
+.tagline, .sub-tagline {
+  position: relative;
+  z-index: 2;
+}
+
+/* Search Bar */
+.search-bar-container {
+  margin-top: 30px;
+  background: #95d5b2;
+  border-radius: 25px;
+  padding: 15px;
+  width: 80%;
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+}
+
+/* Footer */
+footer {
+  position: relative;
+  margin-top: auto;
+  bottom: 1px;
+  font-size: 14px;
+  color: #1D4F36;
+  font-style: italic;
+  letter-spacing: 1px;
+  animation: fadeIn 5s ease-out;
+  z-index: 2;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .sticker {
+    width: 100px; /* Slightly smaller for mobile */
+  }
+
+  .sticker-grid {
+    grid-template-columns: repeat(4, 1fr); /* Reduce columns for smaller screens */
+    grid-template-rows: repeat(3, 1fr);
+    gap: 80px 60px; /* Adjust spacing */
+  }
+
+  .home-container h1 {
+    font-size: 60px;
+  }
+
+  .tagline {
+    font-size: 24px;
+  }
+
+  .sub-tagline {
+    font-size: 18px;
+  }
+
+  .search-bar-container {
+    width: 90%;
+  }
+}
