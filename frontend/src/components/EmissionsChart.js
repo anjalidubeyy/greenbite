@@ -1,5 +1,5 @@
 import React from "react";
-import { Bar, Pie, Bubble } from "react-chartjs-2";
+import { Bar, Pie} from "react-chartjs-2";
 import "chart.js/auto";
 import "../styles/Emissions.css";
 

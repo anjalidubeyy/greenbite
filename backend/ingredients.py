@@ -1,27 +1,19 @@
 import pandas as pd
 from thefuzz import process
+import re
 
 # Synonym map for normalization
 synonym_map = {
-    "aubergine": "eggplant",
-    "brinjal": "eggplant",
-    "courgette": "zucchini",
-    "capsicum": "bell pepper",
-    "ladyfinger": "okra",
-    "spring onion": "green onion",
-    "beetroot": "beet",
-    "cilantro": "coriander",
+    "aubergine": "eggplant", "brinjal": "eggplant",
+    "courgette": "zucchini", "capsicum": "bell pepper",
+    "ladyfinger": "okra", "spring onion": "green onion",
+    "beetroot": "beet", "cilantro": "coriander",
     "mixed vegetables": ["vegetables", "stir-fry vegetables"],
-    "sweet corn": "corn",
-    "yam": ["sweet potato", "taro"],
+    "sweet corn": "corn", "yam": ["sweet potato", "taro"],
     "cauliflower": ["gobi", "flower cabbage"],
     "cabbage": ["red cabbage", "green cabbage"],
-    "strawberries": "berries",
-    "blueberries": "berries",
-    "cheddar cheese": "cheese",
-    "mozzarella cheese": "cheese",
-    "parmesan cheese": "cheese",
-    "paneer": ["cottage cheese", "Indian cheese"],
+    "cheddar cheese": "cheese", "mozzarella cheese": "cheese",
+    "parmesan cheese": "cheese", "paneer": ["cottage cheese", "Indian cheese"],
     "ghee": ["clarified butter", "butter"],
     "yogurt (milk, cultures)": ["yogurt", "curd"],
     "chicken breast": ["chicken", "poultry"],
@@ -43,38 +35,42 @@ def load_dataset(file_path):
 def normalize_input(dish_name):
     """Normalize input dish name using synonyms."""
     words = dish_name.lower().split()
-    normalized_words = [synonym_map.get(word, word) for word in words]
+    normalized_words = []
+
+    # Normalize each word based on synonym map
+    for word in words:
+        normalized_word = word
+        # Check if word has a synonym in the map and replace it
+        for key, values in synonym_map.items():
+            if word in [key] + (values if isinstance(values, list) else [values]):
+                normalized_word = key
+                break
+        normalized_words.append(normalized_word)
+
     return " ".join(normalized_words)
 
 def extract_ingredients(dish_name, dataset, threshold=80):
-    """
-    Extract multiple recipe options and their ingredients using fuzzy matching.
+    """Extract multiple recipe options and their ingredients using fuzzy matching."""
+    dish_name = normalize_input(dish_name)
 
-    Args:
-        dish_name (str): The name of the dish entered by the user.
-        dataset (pd.DataFrame): Dataset containing recipes and their ingredients.
-        threshold (int): Similarity score threshold for fuzzy matching.
-
-    Returns:
-        list: A list of recipe options with their ingredients.
-        list: A list of matched recipe titles.
-    """
-    dish_name = normalize_input(dish_name)  # Apply synonym mapping before matching
-
-    # Fuzzy match to find up to 5 best matches
+    # Fuzzy matching
     matches = process.extract(dish_name, dataset["title"].values, limit=5)
     best_matches = [match[0] for match in matches if match[1] >= threshold]
 
     all_ingredients = []
     matched_titles = []
-    
+
     for best_match in best_matches:
         matched_rows = dataset.loc[dataset["title"] == best_match]
-        
+
         for _, row in matched_rows.iterrows():
-            ingredients = row["NER"].split(", ") if isinstance(row["NER"], str) else []
-            if ingredients:
-                all_ingredients.append(ingredients)
+            ingredients = row["NER"]  # Assuming NER column contains the ingredients
+            if isinstance(ingredients, str) and ingredients:
+                # Clean ingredients
+                ingredients = re.sub(r'[^\w\s,]', '', ingredients)  # Remove special characters
+                cleaned_ingredients = [ingredient.strip().lower() for ingredient in ingredients.split(',')]
+
+                all_ingredients.append(cleaned_ingredients)
                 matched_titles.append(best_match)
 
     return all_ingredients, matched_titles

@@ -3,8 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import "../styles/Results.css";
 
 const Results = () => {
-    const location = useLocation();
     const navigate = useNavigate();
+    const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
     const searchQuery = searchParams.get("query") || "";
 
@@ -16,21 +16,19 @@ const Results = () => {
         if (!searchQuery) return;
 
         const fetchRecipes = async () => {
+            setLoading(true);
+            setError(null);
             try {
-                setLoading(true);
-                setError(null);
-
                 const response = await fetch("http://localhost:5000/search", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ dish: searchQuery }),
+                    body: JSON.stringify({ query: searchQuery }), 
                 });
 
-                if (!response.ok) {
-                    throw new Error(`API Error: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`API Error: ${response.status}`);
 
                 const data = await response.json();
+                console.log("✅ Recipe API Response:", data);
 
                 if (!data || !Array.isArray(data.recipes)) {
                     throw new Error("Invalid data format received.");
@@ -38,6 +36,7 @@ const Results = () => {
 
                 setRecipes(data.recipes);
             } catch (err) {
+                console.error("❌ Recipe API Error:", err);
                 setError(err.message);
                 setRecipes([]);
             } finally {
@@ -48,17 +47,81 @@ const Results = () => {
         fetchRecipes();
     }, [searchQuery]);
 
-    const handleSelectRecipe = (recipe) => {
-        const selectedIngredients = recipe.ingredients
-            ?.map(ing => ing.replace(/["[\]]/g, "").trim())
-            .filter(Boolean) || [];
+    const handleSelectRecipe = async (recipe) => {
+        setLoading(true);
+        setError(null);
 
-        if (selectedIngredients.length === 0) {
-            setError("No valid ingredients found.");
-            return;
+        try {
+            let selectedIngredients = [];
+
+            // 🛠️ Ensure ingredients are in list format
+            if (Array.isArray(recipe.ingredients)) {
+                selectedIngredients = recipe.ingredients.map(ing =>
+                    ing.trim().replace(/[\[\]"]/g, "")
+                ).filter(Boolean);
+            } else {
+                try {
+                    const parsedIngredients = JSON.parse(recipe.ingredients);
+                    if (Array.isArray(parsedIngredients)) {
+                        selectedIngredients = parsedIngredients.map(ing =>
+                            ing.replace(/^"|"$/g, '').trim()
+                        );
+                    } else {
+                        throw new Error("Parsed ingredients are not in an array format.");
+                    }
+                } catch (err) {
+                    console.error("❌ Error parsing ingredients:", err, recipe.ingredients);
+                    setError("Failed to parse ingredients.");
+                    return;
+                }
+            }
+
+            if (selectedIngredients.length === 0) {
+                setError("No valid ingredients found.");
+                return;
+            }
+
+            console.log("🔹 Cleaned Ingredients:", selectedIngredients);
+
+            // 🚀 Fetch emissions data
+            const response = await fetch("http://127.0.0.1:5000/emissions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ingredients: selectedIngredients }),
+            });
+
+            if (!response.ok) throw new Error(`API Error: ${response.status}`);
+
+            const data = await response.json();
+            console.log("✅ Emissions API Response:", data);
+
+            // ✅ Ensure emissions data is valid
+            if (!data || !data.breakdown) {
+                throw new Error("Invalid emissions data received.");
+            }
+
+            // ⚠ Check if emissions data is missing for some ingredients
+            const missingData = Object.keys(data.breakdown).filter(ingredient => data.breakdown[ingredient] === 0);
+            if (missingData.length > 0) {
+                console.warn(`⚠ No emissions data for: ${missingData.join(", ")}`);
+                setError(`No emissions data for: ${missingData.join(", ")}`);
+            }
+
+            // 🔀 Navigate to Emissions page with data
+            navigate("/emissions", {
+                state: {
+                    recipeName: recipe.name || "Unnamed Recipe",
+                    emissionsData: data, // ✅ Pass complete emissions data
+                    selectedIngredients, // ✅ Pass selected ingredients for debugging
+                },
+            });
+
+        } catch (err) {
+            console.error("❌ Emissions API Error:", err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
         }
-
-        navigate("/emissions", { state: { ingredients: selectedIngredients } });
     };
 
     return (
@@ -73,14 +136,9 @@ const Results = () => {
                 <div className="recipe-list">
                     {recipes.map((recipe, index) => (
                         <div key={index} className="recipe-card">
-                            <h3>Recipe {index + 1}</h3>
-                            <p>
-                                <strong>Ingredients:</strong>{" "}
-                                {recipe.ingredients?.join(", ") || "No ingredients available"}
-                            </p>
-                            <button className="select-btn" onClick={() => handleSelectRecipe(recipe)}>
-                                Select Recipe
-                            </button>
+                            <h3>{recipe.name || `Recipe ${index + 1}`}</h3>
+                            <p><strong>Ingredients:</strong> {Array.isArray(recipe.ingredients) ? recipe.ingredients.join(", ") : "No ingredients listed"}</p>
+                            <button className="select-btn" onClick={() => handleSelectRecipe(recipe)}>Select Recipe</button>
                         </div>
                     ))}
                 </div>
