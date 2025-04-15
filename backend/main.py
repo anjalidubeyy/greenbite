@@ -57,7 +57,7 @@ try:
     recipes_df = pd.read_csv(
         recipes_path,
         compression='gzip',
-        nrows=100000,  # Limit to first 100k rows for testing
+        nrows=500000,  # Increased from 100k to 500k rows
         usecols=['title', 'NER']  # Use the correct column names
     )
     
@@ -66,6 +66,11 @@ try:
         'title': 'Title',
         'NER': 'Cleaned_Ingredients'
     })
+    
+    # Print some sample data for debugging
+    print("📊 Sample recipe titles:")
+    print(recipes_df['Title'].head(10))
+    print(f"📊 Total recipes loaded: {len(recipes_df)}")
     
     # Load emissions dataset
     emissions_df = pd.read_csv(emissions_path)
@@ -272,10 +277,32 @@ def compare_dishes():
 
         print(f"✅ Comparing dishes: {dish1_name} vs {dish2_name}")
 
+        # Debug: Print all unique titles in the dataset
+        print("📊 All unique titles in dataset:")
+        print(RECIPES_DATASET['Title'].unique()[:20])  # Print first 20 unique titles
+
         # Find dishes in dataset
         try:
-            dish1 = RECIPES_DATASET[RECIPES_DATASET["Title"].str.lower() == dish1_name.lower()].iloc[0]
-            dish2 = RECIPES_DATASET[RECIPES_DATASET["Title"].str.lower() == dish2_name.lower()].iloc[0]
+            print(f"🔍 Searching for dish1: {dish1_name}")
+            print(f"🔍 Searching for dish2: {dish2_name}")
+            
+            # Use case-insensitive search
+            dish1_matches = RECIPES_DATASET[RECIPES_DATASET["Title"].str.lower() == dish1_name.lower()]
+            dish2_matches = RECIPES_DATASET[RECIPES_DATASET["Title"].str.lower() == dish2_name.lower()]
+            
+            print(f"📊 Dish1 matches found: {len(dish1_matches)}")
+            print(f"📊 Dish2 matches found: {len(dish2_matches)}")
+            
+            if len(dish1_matches) == 0 or len(dish2_matches) == 0:
+                print("❌ One or both dishes not found in dataset!")
+                return jsonify({"error": "One or both dishes not found"}), 404
+            
+            dish1 = dish1_matches.iloc[0]
+            dish2 = dish2_matches.iloc[0]
+            
+            print(f"✅ Found dish1: {dish1['Title']}")
+            print(f"✅ Found dish2: {dish2['Title']}")
+            
         except IndexError:
             print("❌ One or both dishes not found in dataset!")
             return jsonify({"error": "One or both dishes not found"}), 404
