@@ -1,0 +1,6 @@
+include requirements.txt
+include runtime.txt
+include build.sh
+include datasets/*.csv
+include datasets/*.csv.gz
+include *.pkl 
