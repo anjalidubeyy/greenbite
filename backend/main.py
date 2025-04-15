@@ -60,63 +60,24 @@ try:
     print(f"📁 Recipes path: {recipes_path}")
     print(f"📁 Emissions path: {emissions_path}")
     
-    # Function to download with retries
-    def download_with_retry(url, path, max_retries=3):
-        for attempt in range(max_retries):
-            try:
-                print(f"📥 Download attempt {attempt + 1} for {url}")
-                response = requests.get(url, timeout=30)
-                response.raise_for_status()
-                with open(path, 'wb') as f:
-                    f.write(response.content)
-                print(f"✅ Successfully downloaded to {path}")
-                return True
-            except Exception as e:
-                print(f"⚠ Download attempt {attempt + 1} failed: {str(e)}")
-                if attempt == max_retries - 1:
-                    return False
-                time.sleep(2)  # Wait before retrying
-    
-    # Download datasets if they don't exist
-    if not os.path.exists(recipes_path):
-        print("📥 Downloading recipes dataset...")
-        # Try multiple sources
-        recipes_sources = [
-            "https://storage.googleapis.com/greenbite-datasets/filtered_recipes_1m.csv.gz",
-            "https://raw.githubusercontent.com/anjalidubeyy/greenbite/main/datasets/filtered_recipes_1m.csv.gz"
-        ]
-        
-        for source in recipes_sources:
-            if download_with_retry(source, recipes_path):
-                break
-        else:
-            raise Exception("Failed to download recipes dataset from all sources")
-    
-    if not os.path.exists(emissions_path):
-        print("📥 Downloading emissions dataset...")
-        # Try multiple sources
-        emissions_sources = [
-            "https://storage.googleapis.com/greenbite-datasets/Food_Product_Emissions.csv",
-            "https://raw.githubusercontent.com/anjalidubeyy/greenbite/main/datasets/Food_Product_Emissions.csv"
-        ]
-        
-        for source in emissions_sources:
-            if download_with_retry(source, emissions_path):
-                break
-        else:
-            raise Exception("Failed to download emissions dataset from all sources")
-    
-    # Verify files exist before loading
+    # Verify files exist
     if not os.path.exists(recipes_path) or not os.path.exists(emissions_path):
-        raise Exception("Required dataset files not found after download attempts")
+        raise Exception("Required dataset files not found. Please ensure datasets are in the datasets directory.")
     
-    # Load recipes dataset with memory optimization
-    recipes_df = pd.read_csv(
+    # Load recipes dataset in chunks
+    print("📥 Loading recipes dataset in chunks...")
+    chunks = []
+    for chunk in pd.read_csv(
         recipes_path,
         compression='gzip',
         usecols=['title', 'NER'],
-        dtype={'title': 'string', 'NER': 'string'}
-    )
+        dtype={'title': 'string', 'NER': 'string'},
+        chunksize=100000  # Process 100,000 rows at a time
+    ):
+        chunks.append(chunk)
+    
+    # Combine all chunks
+    recipes_df = pd.concat(chunks, ignore_index=True)
     
     # Rename columns to match our code
     recipes_df = recipes_df.rename(columns={
@@ -125,12 +86,20 @@ try:
     })
     
     # Load emissions dataset
-    emissions_df = pd.read_csv(emissions_path)
+    emissions_df = pd.read_csv(
+        emissions_path,
+        usecols=['Food product', 'Total_emissions'],
+        dtype={'Food product': 'string', 'Total_emissions': 'float32'}
+    )
     
     print("✅ Successfully loaded both datasets")
     print(f"📊 Recipes dataset columns: {recipes_df.columns.tolist()}")
     print(f"📊 Emissions dataset columns: {emissions_df.columns.tolist()}")
     print(f"📊 Total recipes loaded: {len(recipes_df)}")
+    
+    # Print sample data to verify
+    print("Sample recipe titles:", recipes_df['Title'].head().tolist())
+    print("Sample emissions data:", emissions_df.head().to_dict('records'))
     
 except Exception as e:
     print(f"❌ Dataset loading error: {str(e)}")
