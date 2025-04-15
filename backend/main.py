@@ -56,8 +56,15 @@ try:
     recipes_df = pd.read_csv(
         recipes_path,
         compression='gzip',
-        nrows=100000  # Limit to first 100k rows for testing
+        nrows=100000,  # Limit to first 100k rows for testing
+        usecols=['title', 'NER']  # Use the correct column names
     )
+    
+    # Rename columns to match our code
+    recipes_df = recipes_df.rename(columns={
+        'title': 'Title',
+        'NER': 'Cleaned_Ingredients'
+    })
     
     # Load emissions dataset
     emissions_df = pd.read_csv(emissions_path)
@@ -68,6 +75,10 @@ try:
 except Exception as e:
     print(f"❌ Dataset loading error: {str(e)}")
     raise
+
+# Global variables to store the datasets
+RECIPES_DATASET = recipes_df
+EMISSIONS_DATASET = emissions_df
 
 @app.route("/search", methods=["POST"])
 def search():
@@ -88,10 +99,10 @@ def search():
         print(f"✅ Query received: {query}")
 
         # Extract ingredients using `ingredients.py`
-        if recipes_df is None:
+        if RECIPES_DATASET is None:
             return jsonify({"error": "Recipes dataset not loaded"}), 500
 
-        extracted_ingredients, matched_titles = extract_ingredients(query, recipes_df)
+        extracted_ingredients, matched_titles = extract_ingredients(query, RECIPES_DATASET)
         print(f"🔍 Extracted Ingredients: {extracted_ingredients}")
         print(f"📌 Matched Titles: {matched_titles}")
 
@@ -140,11 +151,11 @@ def emissions():
         print(f"✅ Ingredients received: {ingredients}")
 
         # Match ingredients with emissions data
-        if emissions_df is None:
+        if EMISSIONS_DATASET is None:
             print("❌ Emissions dataset not loaded!")
             return jsonify({"error": "Emissions dataset not loaded"}), 500
 
-        matched_ingredients = match_ingredients_with_emissions(ingredients, emissions_df)
+        matched_ingredients = match_ingredients_with_emissions(ingredients, EMISSIONS_DATASET)
         if not matched_ingredients:
             print("⚠ No matching ingredients found in emissions dataset!")
             return jsonify({"breakdown": {}, "total_emissions": 0}), 200  
@@ -199,10 +210,10 @@ def predict():
         print(f"✅ Ingredients received: {ingredients}")
 
         # Match ingredients with emissions data
-        if emissions_df is None:
+        if EMISSIONS_DATASET is None:
             return jsonify({"error": "Emissions dataset not loaded"}), 500
 
-        matched_ingredients = match_ingredients_with_emissions(ingredients, emissions_df)
+        matched_ingredients = match_ingredients_with_emissions(ingredients, EMISSIONS_DATASET)
         if not matched_ingredients:
             print("⚠ No matching ingredients found in emissions dataset!")
             return jsonify({
@@ -262,8 +273,8 @@ def compare_dishes():
 
         # Find dishes in dataset
         try:
-            dish1 = recipes_df[recipes_df["Title"].str.lower() == dish1_name.lower()].iloc[0]
-            dish2 = recipes_df[recipes_df["Title"].str.lower() == dish2_name.lower()].iloc[0]
+            dish1 = RECIPES_DATASET[RECIPES_DATASET["Title"].str.lower() == dish1_name.lower()].iloc[0]
+            dish2 = RECIPES_DATASET[RECIPES_DATASET["Title"].str.lower() == dish2_name.lower()].iloc[0]
         except IndexError:
             print("❌ One or both dishes not found in dataset!")
             return jsonify({"error": "One or both dishes not found"}), 404
@@ -276,8 +287,8 @@ def compare_dishes():
         print(f"🔍 Dish 2 ingredients: {dish2_ingredients}")
 
         # Match ingredients with emissions data
-        dish1_matched = match_ingredients_with_emissions(dish1_ingredients, emissions_df)
-        dish2_matched = match_ingredients_with_emissions(dish2_ingredients, emissions_df)
+        dish1_matched = match_ingredients_with_emissions(dish1_ingredients, EMISSIONS_DATASET)
+        dish2_matched = match_ingredients_with_emissions(dish2_ingredients, EMISSIONS_DATASET)
 
         print(f"📊 Dish 1 matched emissions: {dish1_matched}")
         print(f"📊 Dish 2 matched emissions: {dish2_matched}")
