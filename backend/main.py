@@ -12,8 +12,23 @@ from google.cloud import storage
 import tempfile
 
 app = Flask(__name__)
-# Allow requests from your Vercel domain
-CORS(app, resources={r"/*": {"origins": ["https://greenbite-ashy.vercel.app"]}})
+
+# Configure CORS
+CORS(app, resources={
+    r"/*": {
+        "origins": ["https://greenbite-ashy.vercel.app"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
+
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', 'https://greenbite-ashy.vercel.app')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response
 
 def download_from_gcs(bucket_name, source_blob_name, destination_file_name):
     """Downloads a blob from the bucket."""
@@ -22,15 +37,6 @@ def download_from_gcs(bucket_name, source_blob_name, destination_file_name):
     blob = bucket.blob(source_blob_name)
     blob.download_to_filename(destination_file_name)
     print(f"Downloaded {source_blob_name} to {destination_file_name}")
-
-@app.before_request
-def handle_preflight_requests():
-    if request.method == "OPTIONS":
-        response = jsonify({"message": "Preflight request handled"})
-        response.headers["Access-Control-Allow-Origin"] = "https://greenbite-ashy.vercel.app"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type"
-        return response
 
 # Load datasets with error handling
 try:
