@@ -19,7 +19,7 @@ const Results = () => {
             setLoading(true);
             setError(null);
             try {
-                const response = await fetch("http://127.0.0.1:5000/search", {
+                const response = await fetch(`${process.env.REACT_APP_API_URL}/search`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ query: searchQuery }), 
@@ -84,7 +84,7 @@ const Results = () => {
             console.log("🔹 Cleaned Ingredients:", selectedIngredients);
 
             // 🚀 Fetch emissions data
-            const response = await fetch("http://127.0.0.1:5000/emissions", {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/emissions`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ ingredients: selectedIngredients }),

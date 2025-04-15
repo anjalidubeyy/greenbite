@@ -12,7 +12,8 @@ from google.cloud import storage
 import tempfile
 
 app = Flask(__name__)
-CORS(app)  # Allow all origins during development
+# Allow requests from your Vercel domain
+CORS(app, resources={r"/*": {"origins": ["https://greenbite-ashy.vercel.app"]}})
 
 def download_from_gcs(bucket_name, source_blob_name, destination_file_name):
     """Downloads a blob from the bucket."""
@@ -26,7 +27,7 @@ def download_from_gcs(bucket_name, source_blob_name, destination_file_name):
 def handle_preflight_requests():
     if request.method == "OPTIONS":
         response = jsonify({"message": "Preflight request handled"})
-        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Origin"] = "https://greenbite-ashy.vercel.app"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
         response.headers["Access-Control-Allow-Headers"] = "Content-Type"
         return response
