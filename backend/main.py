@@ -40,36 +40,22 @@ def download_from_gcs(bucket_name, source_blob_name, destination_file_name):
 
 # Load datasets with error handling
 try:
-    # Create temporary directory for datasets
-    temp_dir = tempfile.mkdtemp()
+    # Get the absolute path to the datasets directory
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    datasets_dir = os.path.join(os.path.dirname(current_dir), 'datasets')
     
-    # Get bucket and blob names from environment variables
-    GCS_BUCKET = os.getenv('GCS_BUCKET')
-    RECIPES_BLOB = os.getenv('RECIPES_BLOB')
-    EMISSIONS_BLOB = os.getenv('EMISSIONS_BLOB')
+    # Load datasets from local files
+    recipes_path = os.path.join(datasets_dir, 'filtered_recipes_1m.csv.gz')
+    emissions_path = os.path.join(datasets_dir, 'Food_Product_Emissions.csv')
     
-    if GCS_BUCKET and RECIPES_BLOB and EMISSIONS_BLOB:
-        # Download datasets from GCS
-        recipes_path = os.path.join(temp_dir, 'recipes.csv.gz')
-        emissions_path = os.path.join(temp_dir, 'emissions.csv')
-        
-        download_from_gcs(GCS_BUCKET, RECIPES_BLOB, recipes_path)
-        download_from_gcs(GCS_BUCKET, EMISSIONS_BLOB, emissions_path)
-        
-        RECIPES_DATASET = load_dataset(recipes_path)
-        EMISSIONS_DATASET = load_emissions_data(emissions_path)
-    else:
-        # Fallback to local paths if GCS not configured
-        RECIPES_DATASET_PATH = os.getenv('RECIPES_DATASET_PATH', 'datasets/filtered_recipes_1m.csv.gz')
-        EMISSIONS_DATASET_PATH = os.getenv('EMISSIONS_DATASET_PATH', 'datasets/Food_Product_Emissions.csv')
-        
-        RECIPES_DATASET = load_dataset(RECIPES_DATASET_PATH)
-        EMISSIONS_DATASET = load_emissions_data(EMISSIONS_DATASET_PATH)
+    # Load the datasets
+    recipes_df = pd.read_csv(recipes_path, compression='gzip')
+    emissions_df = pd.read_csv(emissions_path)
     
-    print("✅ Datasets loaded successfully!")
+    print("✅ Successfully loaded both datasets")
 except Exception as e:
-    print(f"❌ Dataset loading error: {e}")
-    RECIPES_DATASET, EMISSIONS_DATASET = None, None  # Gracefully handle loading failures
+    print(f"❌ Dataset loading error: {str(e)}")
+    raise
 
 @app.route("/search", methods=["POST"])
 def search():
@@ -90,10 +76,10 @@ def search():
         print(f"✅ Query received: {query}")
 
         # Extract ingredients using `ingredients.py`
-        if RECIPES_DATASET is None:
+        if recipes_df is None:
             return jsonify({"error": "Recipes dataset not loaded"}), 500
 
-        extracted_ingredients, matched_titles = extract_ingredients(query, RECIPES_DATASET)
+        extracted_ingredients, matched_titles = extract_ingredients(query, recipes_df)
         print(f"🔍 Extracted Ingredients: {extracted_ingredients}")
         print(f"📌 Matched Titles: {matched_titles}")
 
@@ -142,11 +128,11 @@ def emissions():
         print(f"✅ Ingredients received: {ingredients}")
 
         # Match ingredients with emissions data
-        if EMISSIONS_DATASET is None:
+        if emissions_df is None:
             print("❌ Emissions dataset not loaded!")
             return jsonify({"error": "Emissions dataset not loaded"}), 500
 
-        matched_ingredients = match_ingredients_with_emissions(ingredients, EMISSIONS_DATASET)
+        matched_ingredients = match_ingredients_with_emissions(ingredients, emissions_df)
         if not matched_ingredients:
             print("⚠ No matching ingredients found in emissions dataset!")
             return jsonify({"breakdown": {}, "total_emissions": 0}), 200  
@@ -201,10 +187,10 @@ def predict():
         print(f"✅ Ingredients received: {ingredients}")
 
         # Match ingredients with emissions data
-        if EMISSIONS_DATASET is None:
+        if emissions_df is None:
             return jsonify({"error": "Emissions dataset not loaded"}), 500
 
-        matched_ingredients = match_ingredients_with_emissions(ingredients, EMISSIONS_DATASET)
+        matched_ingredients = match_ingredients_with_emissions(ingredients, emissions_df)
         if not matched_ingredients:
             print("⚠ No matching ingredients found in emissions dataset!")
             return jsonify({
@@ -264,8 +250,8 @@ def compare_dishes():
 
         # Find dishes in dataset
         try:
-            dish1 = RECIPES_DATASET[RECIPES_DATASET["Title"].str.lower() == dish1_name.lower()].iloc[0]
-            dish2 = RECIPES_DATASET[RECIPES_DATASET["Title"].str.lower() == dish2_name.lower()].iloc[0]
+            dish1 = recipes_df[recipes_df["Title"].str.lower() == dish1_name.lower()].iloc[0]
+            dish2 = recipes_df[recipes_df["Title"].str.lower() == dish2_name.lower()].iloc[0]
         except IndexError:
             print("❌ One or both dishes not found in dataset!")
             return jsonify({"error": "One or both dishes not found"}), 404
@@ -278,8 +264,8 @@ def compare_dishes():
         print(f"🔍 Dish 2 ingredients: {dish2_ingredients}")
 
         # Match ingredients with emissions data
-        dish1_matched = match_ingredients_with_emissions(dish1_ingredients, EMISSIONS_DATASET)
-        dish2_matched = match_ingredients_with_emissions(dish2_ingredients, EMISSIONS_DATASET)
+        dish1_matched = match_ingredients_with_emissions(dish1_ingredients, emissions_df)
+        dish2_matched = match_ingredients_with_emissions(dish2_ingredients, emissions_df)
 
         print(f"📊 Dish 1 matched emissions: {dish1_matched}")
         print(f"📊 Dish 2 matched emissions: {dish2_matched}")
