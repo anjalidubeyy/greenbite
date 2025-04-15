@@ -39,4 +39,8 @@ yarn-error.log
 
 # OS
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# Datasets
+datasets/filtered_recipes_1m.csv.gz
+datasets/Food_Product_Emissions.csv 

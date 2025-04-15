@@ -10,6 +10,9 @@ from sustainability import get_sustainability_score
 from sustainability_comparison import compare_sustainability
 from google.cloud import storage
 import tempfile
+import requests
+from io import BytesIO
+import gzip
 
 app = Flask(__name__)
 
@@ -41,24 +44,20 @@ def download_from_gcs(bucket_name, source_blob_name, destination_file_name):
 
 # Load datasets with error handling
 try:
-    # Get the absolute path to the datasets directory
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    datasets_dir = os.path.join(os.path.dirname(current_dir), 'datasets')
+    print("📁 Downloading datasets...")
     
-    # Load datasets from local files with memory optimization
-    recipes_path = os.path.join(datasets_dir, 'filtered_recipes_1m.csv.gz')
-    emissions_path = os.path.join(datasets_dir, 'Food_Product_Emissions.csv')
-    
-    print(f"📁 Loading datasets from: {datasets_dir}")
-    print(f"📁 Recipes path: {recipes_path}")
-    print(f"📁 Emissions path: {emissions_path}")
+    # Download recipes dataset
+    recipes_url = "https://storage.googleapis.com/greenbite-datasets/filtered_recipes_1m.csv.gz"
+    print(f"📁 Downloading recipes from: {recipes_url}")
+    recipes_response = requests.get(recipes_url)
+    recipes_response.raise_for_status()
     
     # Load recipes dataset with memory optimization
     recipes_df = pd.read_csv(
-        recipes_path,
+        BytesIO(recipes_response.content),
         compression='gzip',
         usecols=['title', 'NER'],
-        dtype={'title': 'string', 'NER': 'string'}  # Use string type to reduce memory usage
+        dtype={'title': 'string', 'NER': 'string'}
     )
     
     # Rename columns to match our code
@@ -67,17 +66,20 @@ try:
         'NER': 'Cleaned_Ingredients'
     })
     
-    # Print some sample data for debugging
-    print("📊 Sample recipe titles:")
-    print(recipes_df['Title'].head(10))
-    print(f"📊 Total recipes loaded: {len(recipes_df)}")
+    # Download emissions dataset
+    emissions_url = "https://storage.googleapis.com/greenbite-datasets/Food_Product_Emissions.csv"
+    print(f"📁 Downloading emissions from: {emissions_url}")
+    emissions_response = requests.get(emissions_url)
+    emissions_response.raise_for_status()
     
     # Load emissions dataset
-    emissions_df = pd.read_csv(emissions_path)
+    emissions_df = pd.read_csv(BytesIO(emissions_response.content))
     
-    print("✅ Successfully loaded both datasets with memory optimization")
+    print("✅ Successfully loaded both datasets")
     print(f"📊 Recipes dataset columns: {recipes_df.columns.tolist()}")
     print(f"📊 Emissions dataset columns: {emissions_df.columns.tolist()}")
+    print(f"📊 Total recipes loaded: {len(recipes_df)}")
+    
 except Exception as e:
     print(f"❌ Dataset loading error: {str(e)}")
     raise
