@@ -48,11 +48,14 @@ try:
     recipes_path = os.path.join(datasets_dir, 'filtered_recipes_1m.csv.gz')
     emissions_path = os.path.join(datasets_dir, 'Food_Product_Emissions.csv')
     
+    print(f"📁 Loading datasets from: {datasets_dir}")
+    print(f"📁 Recipes path: {recipes_path}")
+    print(f"📁 Emissions path: {emissions_path}")
+    
     # Load only necessary columns from recipes dataset
     recipes_df = pd.read_csv(
         recipes_path,
         compression='gzip',
-        usecols=['Title', 'Cleaned_Ingredients'],  # Only load columns we need
         nrows=100000  # Limit to first 100k rows for testing
     )
     
@@ -60,6 +63,8 @@ try:
     emissions_df = pd.read_csv(emissions_path)
     
     print("✅ Successfully loaded both datasets with memory optimization")
+    print(f"📊 Recipes dataset columns: {recipes_df.columns.tolist()}")
+    print(f"📊 Emissions dataset columns: {emissions_df.columns.tolist()}")
 except Exception as e:
     print(f"❌ Dataset loading error: {str(e)}")
     raise
