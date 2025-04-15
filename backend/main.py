@@ -48,13 +48,35 @@ try:
     current_dir = os.path.dirname(os.path.abspath(__file__))
     datasets_dir = os.path.join(os.path.dirname(current_dir), 'datasets')
     
-    # Load datasets from local files with memory optimization
+    # Create datasets directory if it doesn't exist
+    os.makedirs(datasets_dir, exist_ok=True)
+    
+    # Define dataset paths
     recipes_path = os.path.join(datasets_dir, 'filtered_recipes_1m.csv.gz')
     emissions_path = os.path.join(datasets_dir, 'Food_Product_Emissions.csv')
     
     print(f"📁 Loading datasets from: {datasets_dir}")
     print(f"📁 Recipes path: {recipes_path}")
     print(f"📁 Emissions path: {emissions_path}")
+    
+    # Download datasets if they don't exist
+    if not os.path.exists(recipes_path):
+        print("📥 Downloading recipes dataset...")
+        recipes_url = "https://storage.googleapis.com/greenbite-datasets/filtered_recipes_1m.csv.gz"
+        response = requests.get(recipes_url)
+        response.raise_for_status()
+        with open(recipes_path, 'wb') as f:
+            f.write(response.content)
+        print("✅ Recipes dataset downloaded")
+    
+    if not os.path.exists(emissions_path):
+        print("📥 Downloading emissions dataset...")
+        emissions_url = "https://storage.googleapis.com/greenbite-datasets/Food_Product_Emissions.csv"
+        response = requests.get(emissions_url)
+        response.raise_for_status()
+        with open(emissions_path, 'wb') as f:
+            f.write(response.content)
+        print("✅ Emissions dataset downloaded")
     
     # Load recipes dataset with memory optimization
     recipes_df = pd.read_csv(
