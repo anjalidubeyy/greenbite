@@ -57,7 +57,6 @@ try:
     recipes_df = pd.read_csv(
         recipes_path,
         compression='gzip',
-        nrows=500000,  # Increased from 100k to 500k rows
         usecols=['title', 'NER']  # Use the correct column names
     )
     
@@ -277,21 +276,35 @@ def compare_dishes():
 
         print(f"✅ Comparing dishes: {dish1_name} vs {dish2_name}")
 
-        # Debug: Print all unique titles in the dataset
-        print("📊 All unique titles in dataset:")
-        print(RECIPES_DATASET['Title'].unique()[:20])  # Print first 20 unique titles
-
-        # Find dishes in dataset
+        # Find dishes in dataset using fuzzy matching
         try:
             print(f"🔍 Searching for dish1: {dish1_name}")
             print(f"🔍 Searching for dish2: {dish2_name}")
             
-            # Use case-insensitive search
-            dish1_matches = RECIPES_DATASET[RECIPES_DATASET["Title"].str.lower() == dish1_name.lower()]
-            dish2_matches = RECIPES_DATASET[RECIPES_DATASET["Title"].str.lower() == dish2_name.lower()]
+            # Get all unique titles for fuzzy matching
+            all_titles = RECIPES_DATASET['Title'].unique()
             
-            print(f"📊 Dish1 matches found: {len(dish1_matches)}")
-            print(f"📊 Dish2 matches found: {len(dish2_matches)}")
+            # Find best matches using fuzzy matching
+            dish1_matches = process.extract(dish1_name.lower(), [title.lower() for title in all_titles], limit=5)
+            dish2_matches = process.extract(dish2_name.lower(), [title.lower() for title in all_titles], limit=5)
+            
+            print(f"📊 Dish1 fuzzy matches: {dish1_matches}")
+            print(f"📊 Dish2 fuzzy matches: {dish2_matches}")
+            
+            # Get the best match for each dish
+            dish1_best_match = dish1_matches[0][0] if dish1_matches else None
+            dish2_best_match = dish2_matches[0][0] if dish2_matches else None
+            
+            if not dish1_best_match or not dish2_best_match:
+                print("❌ Could not find good matches for one or both dishes!")
+                return jsonify({"error": "Could not find good matches for one or both dishes"}), 404
+            
+            # Find the exact matches in the dataset
+            dish1_matches = RECIPES_DATASET[RECIPES_DATASET["Title"].str.lower() == dish1_best_match]
+            dish2_matches = RECIPES_DATASET[RECIPES_DATASET["Title"].str.lower() == dish2_best_match]
+            
+            print(f"📊 Dish1 exact matches found: {len(dish1_matches)}")
+            print(f"📊 Dish2 exact matches found: {len(dish2_matches)}")
             
             if len(dish1_matches) == 0 or len(dish2_matches) == 0:
                 print("❌ One or both dishes not found in dataset!")
