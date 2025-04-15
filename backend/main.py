@@ -44,17 +44,21 @@ def download_from_gcs(bucket_name, source_blob_name, destination_file_name):
 
 # Load datasets with error handling
 try:
-    print("📁 Downloading datasets...")
+    # Get the absolute path to the datasets directory
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    datasets_dir = os.path.join(os.path.dirname(current_dir), 'datasets')
     
-    # Download recipes dataset
-    recipes_url = "https://storage.googleapis.com/greenbite-datasets/filtered_recipes_1m.csv.gz"
-    print(f"📁 Downloading recipes from: {recipes_url}")
-    recipes_response = requests.get(recipes_url)
-    recipes_response.raise_for_status()
+    # Load datasets from local files with memory optimization
+    recipes_path = os.path.join(datasets_dir, 'filtered_recipes_1m.csv.gz')
+    emissions_path = os.path.join(datasets_dir, 'Food_Product_Emissions.csv')
+    
+    print(f"📁 Loading datasets from: {datasets_dir}")
+    print(f"📁 Recipes path: {recipes_path}")
+    print(f"📁 Emissions path: {emissions_path}")
     
     # Load recipes dataset with memory optimization
     recipes_df = pd.read_csv(
-        BytesIO(recipes_response.content),
+        recipes_path,
         compression='gzip',
         usecols=['title', 'NER'],
         dtype={'title': 'string', 'NER': 'string'}
@@ -66,14 +70,8 @@ try:
         'NER': 'Cleaned_Ingredients'
     })
     
-    # Download emissions dataset
-    emissions_url = "https://storage.googleapis.com/greenbite-datasets/Food_Product_Emissions.csv"
-    print(f"📁 Downloading emissions from: {emissions_url}")
-    emissions_response = requests.get(emissions_url)
-    emissions_response.raise_for_status()
-    
     # Load emissions dataset
-    emissions_df = pd.read_csv(BytesIO(emissions_response.content))
+    emissions_df = pd.read_csv(emissions_path)
     
     print("✅ Successfully loaded both datasets")
     print(f"📊 Recipes dataset columns: {recipes_df.columns.tolist()}")
