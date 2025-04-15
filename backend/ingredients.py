@@ -54,17 +54,17 @@ def extract_ingredients(dish_name, dataset, threshold=80):
     dish_name = normalize_input(dish_name)
 
     # Fuzzy matching
-    matches = process.extract(dish_name, dataset["title"].values, limit=5)
+    matches = process.extract(dish_name, dataset["Title"].values, limit=5)
     best_matches = [match[0] for match in matches if match[1] >= threshold]
 
     all_ingredients = []
     matched_titles = []
 
     for best_match in best_matches:
-        matched_rows = dataset.loc[dataset["title"] == best_match]
+        matched_rows = dataset.loc[dataset["Title"] == best_match]
 
         for _, row in matched_rows.iterrows():
-            ingredients = row["NER"]  # Assuming NER column contains the ingredients
+            ingredients = row["Cleaned_Ingredients"]  # Using the renamed column
             if isinstance(ingredients, str) and ingredients:
                 # Clean ingredients
                 ingredients = re.sub(r'[^\w\s,]', '', ingredients)  # Remove special characters
