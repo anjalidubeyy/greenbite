@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/CompareDishes.css';
+import API_URL from '../config';
 
 const CompareDishes = () => {
     const [dish1, setDish1] = useState('');
@@ -17,7 +18,7 @@ const CompareDishes = () => {
         setLoading(true);
 
         try {
-            const response = await fetch('http://localhost:5000/compare-dishes', {
+            const response = await fetch(`${API_URL}/compare-dishes`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
