@@ -1,0 +1,4 @@
+# Track large dataset files
+datasets/filtered_recipes_1m.csv.gz filter=lfs diff=lfs merge=lfs -text
+datasets/Food_Product_Emissions.csv filter=lfs diff=lfs merge=lfs -text
+*.pkl filter=lfs diff=lfs merge=lfs -text
