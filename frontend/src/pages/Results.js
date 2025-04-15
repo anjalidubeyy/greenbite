@@ -19,7 +19,7 @@ const Results = () => {
             setLoading(true);
             setError(null);
             try {
-                const response = await fetch("http://localhost:5000/search", {
+                const response = await fetch("http://127.0.0.1:5000/search", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ query: searchQuery }), 
@@ -108,9 +108,11 @@ const Results = () => {
             }
 
             // 🔀 Navigate to Emissions page with data
+            console.log("Recipe name being passed:", recipe.name || searchQuery || "Emissions Report"); // Debug recipe name
             navigate("/emissions", {
                 state: {
-                    recipeName: recipe.name || "Unnamed Recipe",
+                    recipeName: recipe.name || searchQuery || "Emissions Report",
+                    searchQuery: searchQuery, // Pass the search query
                     emissionsData: data, // ✅ Pass complete emissions data
                     selectedIngredients, // ✅ Pass selected ingredients for debugging
                 },

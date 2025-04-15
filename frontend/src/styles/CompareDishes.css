@@ -1,0 +1,80 @@
+.compare-dishes-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 2rem;
+    text-align: center;
+}
+
+.compare-dishes-container h1 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.compare-form {
+    margin-top: 2rem;
+}
+
+.search-container {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+}
+
+.search-box {
+    flex: 1;
+    min-width: 300px;
+    max-width: 450px;
+}
+
+.search-box label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #34495e;
+    font-weight: 500;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 0.8rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #4CAF50;
+}
+
+.compare-button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.compare-button:hover:not(:disabled) {
+    background-color: #45a049;
+}
+
+.compare-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+    .compare-dishes-container {
+        padding: 1rem;
+    }
+
+    .search-box {
+        min-width: 100%;
+    }
+} 

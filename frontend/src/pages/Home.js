@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import SearchBar from "../components/SearchBar";
 import "../styles/Home.css";
 
@@ -39,6 +40,8 @@ const Stickers = () => {
 };
 
 function Home() {
+  const navigate = useNavigate();
+
   return (
     <div className="home-container">
       <Stickers />
@@ -47,6 +50,12 @@ function Home() {
       <p className="sub-tagline">Know Your Food, Know Your Life</p>
       <div className="search-bar-container">
         <SearchBar />
+        <button 
+          className="compare-button"
+          onClick={() => navigate('/compare')}
+        >
+          Compare Dishes
+        </button>
       </div>
       <footer>
         <p>Made with ❤️ by Anjali Dubey</p>

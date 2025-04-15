@@ -62,9 +62,27 @@
   padding: 15px;
   width: 80%;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
   position: relative;
   z-index: 2;
+}
+
+.compare-button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  width: fit-content;
+}
+
+.compare-button:hover {
+  background-color: #45a049;
 }
 
 /* Footer */
