@@ -13,6 +13,7 @@ import tempfile
 import requests
 from io import BytesIO
 import gzip
+import time
 
 app = Flask(__name__)
 
@@ -59,24 +60,55 @@ try:
     print(f"📁 Recipes path: {recipes_path}")
     print(f"📁 Emissions path: {emissions_path}")
     
+    # Function to download with retries
+    def download_with_retry(url, path, max_retries=3):
+        for attempt in range(max_retries):
+            try:
+                print(f"📥 Download attempt {attempt + 1} for {url}")
+                response = requests.get(url, timeout=30)
+                response.raise_for_status()
+                with open(path, 'wb') as f:
+                    f.write(response.content)
+                print(f"✅ Successfully downloaded to {path}")
+                return True
+            except Exception as e:
+                print(f"⚠ Download attempt {attempt + 1} failed: {str(e)}")
+                if attempt == max_retries - 1:
+                    return False
+                time.sleep(2)  # Wait before retrying
+    
     # Download datasets if they don't exist
     if not os.path.exists(recipes_path):
         print("📥 Downloading recipes dataset...")
-        recipes_url = "https://storage.googleapis.com/greenbite-datasets/filtered_recipes_1m.csv.gz"
-        response = requests.get(recipes_url)
-        response.raise_for_status()
-        with open(recipes_path, 'wb') as f:
-            f.write(response.content)
-        print("✅ Recipes dataset downloaded")
+        # Try multiple sources
+        recipes_sources = [
+            "https://storage.googleapis.com/greenbite-datasets/filtered_recipes_1m.csv.gz",
+            "https://raw.githubusercontent.com/anjalidubeyy/greenbite/main/datasets/filtered_recipes_1m.csv.gz"
+        ]
+        
+        for source in recipes_sources:
+            if download_with_retry(source, recipes_path):
+                break
+        else:
+            raise Exception("Failed to download recipes dataset from all sources")
     
     if not os.path.exists(emissions_path):
         print("📥 Downloading emissions dataset...")
-        emissions_url = "https://storage.googleapis.com/greenbite-datasets/Food_Product_Emissions.csv"
-        response = requests.get(emissions_url)
-        response.raise_for_status()
-        with open(emissions_path, 'wb') as f:
-            f.write(response.content)
-        print("✅ Emissions dataset downloaded")
+        # Try multiple sources
+        emissions_sources = [
+            "https://storage.googleapis.com/greenbite-datasets/Food_Product_Emissions.csv",
+            "https://raw.githubusercontent.com/anjalidubeyy/greenbite/main/datasets/Food_Product_Emissions.csv"
+        ]
+        
+        for source in emissions_sources:
+            if download_with_retry(source, emissions_path):
+                break
+        else:
+            raise Exception("Failed to download emissions dataset from all sources")
+    
+    # Verify files exist before loading
+    if not os.path.exists(recipes_path) or not os.path.exists(emissions_path):
+        raise Exception("Required dataset files not found after download attempts")
     
     # Load recipes dataset with memory optimization
     recipes_df = pd.read_csv(
