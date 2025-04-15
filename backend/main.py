@@ -53,20 +53,24 @@ try:
     print(f"📁 Recipes path: {recipes_path}")
     print(f"📁 Emissions path: {emissions_path}")
     
-    # Load only necessary columns from recipes dataset
-    recipes_df = pd.read_csv(
+    # Load recipes dataset in chunks
+    chunks = []
+    for chunk in pd.read_csv(
         recipes_path,
         compression='gzip',
-        usecols=['title', 'NER']  # Use the correct column names
-    )
+        usecols=['title', 'NER'],
+        chunksize=100000  # Process 100k rows at a time
+    ):
+        # Rename columns in each chunk
+        chunk = chunk.rename(columns={
+            'title': 'Title',
+            'NER': 'Cleaned_Ingredients'
+        })
+        chunks.append(chunk)
     
-    # Rename columns to match our code
-    recipes_df = recipes_df.rename(columns={
-        'title': 'Title',
-        'NER': 'Cleaned_Ingredients'
-    })
+    # Combine all chunks
+    recipes_df = pd.concat(chunks, ignore_index=True)
     
-    # Print some sample data for debugging
     print("📊 Sample recipe titles:")
     print(recipes_df['Title'].head(10))
     print(f"📊 Total recipes loaded: {len(recipes_df)}")
@@ -276,111 +280,115 @@ def compare_dishes():
 
         print(f"✅ Comparing dishes: {dish1_name} vs {dish2_name}")
 
-        # Find dishes in dataset using fuzzy matching
+        # Find dishes in dataset
         try:
             print(f"🔍 Searching for dish1: {dish1_name}")
             print(f"🔍 Searching for dish2: {dish2_name}")
             
-            # Get all unique titles for fuzzy matching
-            all_titles = RECIPES_DATASET['Title'].unique()
+            # Search for dishes in chunks to save memory
+            dish1_found = None
+            dish2_found = None
             
-            # Find best matches using fuzzy matching
-            dish1_matches = process.extract(dish1_name.lower(), [title.lower() for title in all_titles], limit=5)
-            dish2_matches = process.extract(dish2_name.lower(), [title.lower() for title in all_titles], limit=5)
+            for chunk in pd.read_csv(
+                recipes_path,
+                compression='gzip',
+                usecols=['title', 'NER'],
+                chunksize=100000
+            ):
+                # Rename columns in chunk
+                chunk = chunk.rename(columns={
+                    'title': 'Title',
+                    'NER': 'Cleaned_Ingredients'
+                })
+                
+                # Search for dish1 if not found yet
+                if dish1_found is None:
+                    dish1_matches = chunk[chunk["Title"].str.lower() == dish1_name.lower()]
+                    if not dish1_matches.empty:
+                        dish1_found = dish1_matches.iloc[0]
+                
+                # Search for dish2 if not found yet
+                if dish2_found is None:
+                    dish2_matches = chunk[chunk["Title"].str.lower() == dish2_name.lower()]
+                    if not dish2_matches.empty:
+                        dish2_found = dish2_matches.iloc[0]
+                
+                # If both dishes are found, break the loop
+                if dish1_found is not None and dish2_found is not None:
+                    break
             
-            print(f"📊 Dish1 fuzzy matches: {dish1_matches}")
-            print(f"📊 Dish2 fuzzy matches: {dish2_matches}")
-            
-            # Get the best match for each dish
-            dish1_best_match = dish1_matches[0][0] if dish1_matches else None
-            dish2_best_match = dish2_matches[0][0] if dish2_matches else None
-            
-            if not dish1_best_match or not dish2_best_match:
-                print("❌ Could not find good matches for one or both dishes!")
-                return jsonify({"error": "Could not find good matches for one or both dishes"}), 404
-            
-            # Find the exact matches in the dataset
-            dish1_matches = RECIPES_DATASET[RECIPES_DATASET["Title"].str.lower() == dish1_best_match]
-            dish2_matches = RECIPES_DATASET[RECIPES_DATASET["Title"].str.lower() == dish2_best_match]
-            
-            print(f"📊 Dish1 exact matches found: {len(dish1_matches)}")
-            print(f"📊 Dish2 exact matches found: {len(dish2_matches)}")
-            
-            if len(dish1_matches) == 0 or len(dish2_matches) == 0:
+            if dish1_found is None or dish2_found is None:
                 print("❌ One or both dishes not found in dataset!")
                 return jsonify({"error": "One or both dishes not found"}), 404
             
-            dish1 = dish1_matches.iloc[0]
-            dish2 = dish2_matches.iloc[0]
+            print(f"✅ Found dish1: {dish1_found['Title']}")
+            print(f"✅ Found dish2: {dish2_found['Title']}")
             
-            print(f"✅ Found dish1: {dish1['Title']}")
-            print(f"✅ Found dish2: {dish2['Title']}")
+            # Extract and clean ingredients
+            dish1_ingredients = [ing.strip() for ing in dish1_found["Cleaned_Ingredients"].split(",")]
+            dish2_ingredients = [ing.strip() for ing in dish2_found["Cleaned_Ingredients"].split(",")]
+
+            print(f"🔍 Dish 1 ingredients: {dish1_ingredients}")
+            print(f"🔍 Dish 2 ingredients: {dish2_ingredients}")
+
+            # Match ingredients with emissions data
+            dish1_matched = match_ingredients_with_emissions(dish1_ingredients, EMISSIONS_DATASET)
+            dish2_matched = match_ingredients_with_emissions(dish2_ingredients, EMISSIONS_DATASET)
+
+            print(f"📊 Dish 1 matched emissions: {dish1_matched}")
+            print(f"📊 Dish 2 matched emissions: {dish2_matched}")
+
+            # Calculate total emissions
+            dish1_impact, dish1_total = calculate_total_impact(dish1_matched)
+            dish2_impact, dish2_total = calculate_total_impact(dish2_matched)
+
+            print(f"📈 Dish 1 total emissions: {dish1_total}")
+            print(f"📈 Dish 2 total emissions: {dish2_total}")
+
+            # Calculate sustainability scores
+            dish1_score = get_sustainability_score(dish1_ingredients)
+            dish2_score = get_sustainability_score(dish2_ingredients)
             
+            # Cap scores at 5.0
+            dish1_score = min(5.0, float(dish1_score)) if isinstance(dish1_score, (int, float)) else 3.0
+            dish2_score = min(5.0, float(dish2_score)) if isinstance(dish2_score, (int, float)) else 3.0
+
+            print(f"⭐ Dish 1 sustainability score: {dish1_score}")
+            print(f"⭐ Dish 2 sustainability score: {dish2_score}")
+
+            # Prepare detailed results
+            result = {
+                "dish1": {
+                    "title": dish1_found["Title"],
+                    "ingredients": dish1_ingredients,
+                    "ingredient_emissions": dish1_matched,
+                    "sustainability_score": dish1_score,
+                    "total_emissions": round(dish1_total, 2),
+                    "emissions_breakdown": {key: round(value, 3) for key, value in dish1_impact.items()},
+                    "emissions_equivalence": calculate_emissions_equivalence(dish1_total)
+                },
+                "dish2": {
+                    "title": dish2_found["Title"],
+                    "ingredients": dish2_ingredients,
+                    "ingredient_emissions": dish2_matched,
+                    "sustainability_score": dish2_score,
+                    "total_emissions": round(dish2_total, 2),
+                    "emissions_breakdown": {key: round(value, 3) for key, value in dish2_impact.items()},
+                    "emissions_equivalence": calculate_emissions_equivalence(dish2_total)
+                },
+                "comparison_result": {
+                    "more_eco_friendly": dish1_found["Title"] if dish1_score > dish2_score else dish2_found["Title"],
+                    "score_difference": round(abs(dish1_score - dish2_score), 2),
+                    "emissions_difference": round(abs(dish1_total - dish2_total), 2)
+                }
+            }
+
+            print("📌 Final comparison result:", result)
+            return jsonify(result), 200
+
         except IndexError:
             print("❌ One or both dishes not found in dataset!")
             return jsonify({"error": "One or both dishes not found"}), 404
-
-        # Extract and clean ingredients
-        dish1_ingredients = [ing.strip() for ing in dish1["Cleaned_Ingredients"].split(",")]
-        dish2_ingredients = [ing.strip() for ing in dish2["Cleaned_Ingredients"].split(",")]
-
-        print(f"🔍 Dish 1 ingredients: {dish1_ingredients}")
-        print(f"🔍 Dish 2 ingredients: {dish2_ingredients}")
-
-        # Match ingredients with emissions data
-        dish1_matched = match_ingredients_with_emissions(dish1_ingredients, EMISSIONS_DATASET)
-        dish2_matched = match_ingredients_with_emissions(dish2_ingredients, EMISSIONS_DATASET)
-
-        print(f"📊 Dish 1 matched emissions: {dish1_matched}")
-        print(f"📊 Dish 2 matched emissions: {dish2_matched}")
-
-        # Calculate total emissions
-        dish1_impact, dish1_total = calculate_total_impact(dish1_matched)
-        dish2_impact, dish2_total = calculate_total_impact(dish2_matched)
-
-        print(f"📈 Dish 1 total emissions: {dish1_total}")
-        print(f"📈 Dish 2 total emissions: {dish2_total}")
-
-        # Calculate sustainability scores
-        dish1_score = get_sustainability_score(dish1_ingredients)
-        dish2_score = get_sustainability_score(dish2_ingredients)
-        
-        # Cap scores at 5.0
-        dish1_score = min(5.0, float(dish1_score)) if isinstance(dish1_score, (int, float)) else 3.0
-        dish2_score = min(5.0, float(dish2_score)) if isinstance(dish2_score, (int, float)) else 3.0
-
-        print(f"⭐ Dish 1 sustainability score: {dish1_score}")
-        print(f"⭐ Dish 2 sustainability score: {dish2_score}")
-
-        # Prepare detailed results
-        result = {
-            "dish1": {
-                "title": dish1["Title"],
-                "ingredients": dish1_ingredients,
-                "ingredient_emissions": dish1_matched,
-                "sustainability_score": dish1_score,
-                "total_emissions": round(dish1_total, 2),
-                "emissions_breakdown": {key: round(value, 3) for key, value in dish1_impact.items()},
-                "emissions_equivalence": calculate_emissions_equivalence(dish1_total)
-            },
-            "dish2": {
-                "title": dish2["Title"],
-                "ingredients": dish2_ingredients,
-                "ingredient_emissions": dish2_matched,
-                "sustainability_score": dish2_score,
-                "total_emissions": round(dish2_total, 2),
-                "emissions_breakdown": {key: round(value, 3) for key, value in dish2_impact.items()},
-                "emissions_equivalence": calculate_emissions_equivalence(dish2_total)
-            },
-            "comparison_result": {
-                "more_eco_friendly": dish1["Title"] if dish1_score > dish2_score else dish2["Title"],
-                "score_difference": round(abs(dish1_score - dish2_score), 2),
-                "emissions_difference": round(abs(dish1_total - dish2_total), 2)
-            }
-        }
-
-        print("📌 Final comparison result:", result)
-        return jsonify(result), 200
 
     except Exception as e:
         print(f"❌ Error comparing dishes: {str(e)}")
