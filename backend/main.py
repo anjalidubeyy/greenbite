@@ -18,7 +18,8 @@ CORS(app, resources={
     r"/*": {
         "origins": ["https://greenbite-ashy.vercel.app"],
         "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"]
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
     }
 })
 
